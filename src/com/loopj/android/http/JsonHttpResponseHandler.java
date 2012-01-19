@@ -60,18 +60,18 @@ public class JsonHttpResponseHandler extends AsyncHttpResponseHandler {
 
     // Utility methods
     @Override
-    protected void handleSuccessMessage(String responseBody) {
-        super.handleSuccessMessage(responseBody);
+    protected void handleSuccessMessage(AsyncHttpResponse response) {
+        super.handleSuccessMessage(response);
 
         try {
-            Object jsonResponse = parseResponse(responseBody);
+            Object jsonResponse = parseResponse(response.responseBody);
             if(jsonResponse instanceof JSONObject) {
                 onSuccess((JSONObject)jsonResponse);
             } else if(jsonResponse instanceof JSONArray) {
                 onSuccess((JSONArray)jsonResponse);
             }
         } catch(JSONException e) {
-            onFailure(e, responseBody);
+            onFailure(e, response.responseBody);
         }
     }
 

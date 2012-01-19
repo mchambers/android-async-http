@@ -33,7 +33,7 @@ import android.os.Looper;
 
 /**
  * Used to intercept and handle the responses from requests made using 
- * {@link AsyncHttpClient}. The {@link #onSuccess(String)} method is 
+ * {@link AsyncHttpClient}. The {@link #onSuccess(AsyncHttpResponse) method is
  * designed to be anonymously overridden with your own response handling code.
  * <p>
  * Additionally, you can override the {@link #onFailure(Throwable, String)},
@@ -87,6 +87,17 @@ public class AsyncHttpResponseHandler {
             };
         }
     }
+    
+    public class AsyncHttpResponse {
+        public AsyncHttpResponse(int statusCode, String body)
+        {
+            responseBody=body;
+            responseCode=statusCode;
+        }
+
+        public String responseBody;
+        public int responseCode;
+    }
 
 
     //
@@ -105,9 +116,9 @@ public class AsyncHttpResponseHandler {
 
     /**
      * Fired when a request returns successfully, override to handle in your own code
-     * @param content the body of the HTTP response from the server
+     * @param response the HTTP response from the server
      */
-    public void onSuccess(String content) {}
+    public void onSuccess(AsyncHttpResponse response) {}
 
     /**
      * Fired when a request fails to complete, override to handle in your own code
@@ -131,8 +142,8 @@ public class AsyncHttpResponseHandler {
     // Pre-processing of messages (executes in background threadpool thread)
     //
 
-    protected void sendSuccessMessage(String responseBody) {
-        sendMessage(obtainMessage(SUCCESS_MESSAGE, responseBody));
+    protected void sendSuccessMessage(AsyncHttpResponse response) {
+        sendMessage(obtainMessage(SUCCESS_MESSAGE, response));
     }
 
     protected void sendFailureMessage(Throwable e, String responseBody) {
@@ -147,13 +158,12 @@ public class AsyncHttpResponseHandler {
         sendMessage(obtainMessage(FINISH_MESSAGE, null));
     }
 
-
     //
     // Pre-processing of messages (in original calling thread, typically the UI thread)
     //
 
-    protected void handleSuccessMessage(String responseBody) {
-        onSuccess(responseBody);
+    protected void handleSuccessMessage(AsyncHttpResponse response) {
+        onSuccess(response);
     }
 
     protected void handleFailureMessage(Throwable e, String responseBody) {
@@ -166,7 +176,7 @@ public class AsyncHttpResponseHandler {
     protected void handleMessage(Message msg) {
         switch(msg.what) {
             case SUCCESS_MESSAGE:
-                handleSuccessMessage((String)msg.obj);
+                handleSuccessMessage((AsyncHttpResponse)msg.obj);
                 break;
             case FAILURE_MESSAGE:
                 Object[] repsonse = (Object[])msg.obj;
@@ -201,7 +211,6 @@ public class AsyncHttpResponseHandler {
         return msg;
     }
 
-
     // Interface to AsyncHttpRequest
     void sendResponseMessage(HttpResponse response) {
         StatusLine status = response.getStatusLine();
@@ -220,7 +229,7 @@ public class AsyncHttpResponseHandler {
         if(status.getStatusCode() >= 300) {
             sendFailureMessage(new HttpResponseException(status.getStatusCode(), status.getReasonPhrase()), responseBody);
         } else {
-            sendSuccessMessage(responseBody);
+            sendSuccessMessage(new AsyncHttpResponse(status.getStatusCode(), responseBody));
         }
     }
 }
